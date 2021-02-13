@@ -5,7 +5,8 @@ import {
   getGroups,
   createGroup,
   getImages,
-  getImage } from './src/functions';
+  getImage,
+  createImage } from './src/functions';
 
 const serverlessConfiguration: AWS = {
   service: 'service-10-udagram-app',
@@ -27,6 +28,10 @@ const serverlessConfiguration: AWS = {
         name: 'GroupRequest',
         contentType: 'application/json',
         schema: '${file(src/functions/http/createGroup/schema.ts)}'
+      }, {
+        name: 'ImageRequest',
+        contentType: 'application/json',
+        schema: '${file(src/functions/http/createImage/schema.ts)}'
       }]
     }
   },
@@ -52,7 +57,7 @@ const serverlessConfiguration: AWS = {
       Resource: 'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}'
     }, {
       Effect: 'Allow',
-      Action: ['dynamodb:Query'],
+      Action: ['dynamodb:Query', 'dynamodb:PutItem'],
       Resource: 'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}'
     }, {
       Effect: 'Allow',
@@ -66,7 +71,8 @@ const serverlessConfiguration: AWS = {
     getGroups,
     createGroup,
     getImages,
-    getImage
+    getImage,
+    createImage
   },
   resources: {
     Resources: {
