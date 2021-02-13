@@ -4,7 +4,8 @@ import {
   hello,
   getGroups,
   createGroup,
-  getImages } from './src/functions';
+  getImages,
+  getImage } from './src/functions';
 
 const serverlessConfiguration: AWS = {
   service: 'service-10-udagram-app',
@@ -42,7 +43,8 @@ const serverlessConfiguration: AWS = {
     environment: {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       GROUPS_TABLE: 'Groups-${self:provider.stage}',
-      IMAGES_TABLE: 'Images-${self:provider.stage}'
+      IMAGES_TABLE: 'Images-${self:provider.stage}',
+      IMAGE_ID_INDEX: 'ImageIdIndex'
     },
     iamRoleStatements: [{
       Effect: 'Allow',
@@ -52,6 +54,10 @@ const serverlessConfiguration: AWS = {
       Effect: 'Allow',
       Action: ['dynamodb:Query'],
       Resource: 'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}'
+    }, {
+      Effect: 'Allow',
+      Action: ['dynamodb:Query'],
+      Resource: 'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}/index/${self:provider.environment.IMAGE_ID_INDEX}'
     }],
     lambdaHashingVersion: '20201221',
   },
@@ -59,7 +65,8 @@ const serverlessConfiguration: AWS = {
     hello,
     getGroups,
     createGroup,
-    getImages
+    getImages,
+    getImage
   },
   resources: {
     Resources: {
@@ -87,6 +94,9 @@ const serverlessConfiguration: AWS = {
           }, {
             AttributeName: 'timestamp',
             AttributeType: 'S'
+          }, {
+            AttributeName: 'imageId',
+            AttributeType: 'S'
           }],
           KeySchema: [{
             AttributeName: 'groupId',
@@ -96,7 +106,17 @@ const serverlessConfiguration: AWS = {
             KeyType: 'RANGE'
           }],
           BillingMode: 'PAY_PER_REQUEST',
-          TableName: '${self:provider.environment.IMAGES_TABLE}'
+          TableName: '${self:provider.environment.IMAGES_TABLE}',
+          GlobalSecondaryIndexes: [{
+            IndexName: '${self:provider.environment.IMAGE_ID_INDEX}',
+            KeySchema: [{
+              AttributeName: 'imageId',
+              KeyType: 'HASH'
+            }],
+            Projection: {
+              ProjectionType: 'ALL'
+            }
+          }]
         }
       }
     }

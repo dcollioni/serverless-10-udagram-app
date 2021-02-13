@@ -10,6 +10,6 @@ export const formatJSONResponse = (response: Record<string, unknown>, statusCode
     headers: {
       'Access-Control-Allow-Origin': '*'
     },
-    body: JSON.stringify(response)
+    body: response ? JSON.stringify(response) : null
   }
 }
