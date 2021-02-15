@@ -49,7 +49,8 @@ const serverlessConfiguration: AWS = {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       GROUPS_TABLE: 'Groups-${self:provider.stage}',
       IMAGES_TABLE: 'Images-${self:provider.stage}',
-      IMAGE_ID_INDEX: 'ImageIdIndex'
+      IMAGE_ID_INDEX: 'ImageIdIndex',
+      IMAGES_S3_BUCKET: 'dcollioni-serverless-udagram-images-${self:provider.stage}'
     },
     iamRoleStatements: [{
       Effect: 'Allow',
@@ -123,6 +124,37 @@ const serverlessConfiguration: AWS = {
               ProjectionType: 'ALL'
             }
           }]
+        }
+      },
+      AttachmentsBucket: {
+        Type: 'AWS::S3::Bucket',
+        Properties: {
+          BucketName: '${self:provider.environment.IMAGES_S3_BUCKET}',
+          CorsConfiguration: {
+            CorsRules: [{
+              AllowedOrigins: ['*'],
+              AllowedHeaders: ['*'],
+              AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
+              MaxAge: 3000
+            }]
+          }
+        }
+      },
+      BucketPolicy: {
+        Type: 'AWS::S3::BucketPolicy',
+        Properties: {
+          PolicyDocument: {
+            Id: 'MyPolicy',
+            Version: "2012-10-17",
+            Statement: [{
+              Sid: 'PublicReadForGetBucketObjects',
+              Effect: 'Allow',
+              Principal: '*',
+              Action: 's3:GetObject',
+              Resource: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*'
+            }]
+          },
+          Bucket: { Ref: 'AttachmentsBucket' }
         }
       }
     }
