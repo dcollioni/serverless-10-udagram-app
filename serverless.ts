@@ -6,7 +6,8 @@ import {
   createGroup,
   getImages,
   getImage,
-  createImage } from './src/functions';
+  createImage,
+  sendNotification } from './src/functions';
 
 const serverlessConfiguration: AWS = {
   service: 'service-10-udagram-app',
@@ -50,7 +51,8 @@ const serverlessConfiguration: AWS = {
       GROUPS_TABLE: 'Groups-${self:provider.stage}',
       IMAGES_TABLE: 'Images-${self:provider.stage}',
       IMAGE_ID_INDEX: 'ImageIdIndex',
-      IMAGES_S3_BUCKET: 'dcollioni-serverless-udagram-images-${self:provider.stage}'
+      IMAGES_S3_BUCKET: 'dcollioni-serverless-udagram-images-${self:provider.stage}',
+      SIGNED_URL_EXPIRATION: '300'
     },
     iamRoleStatements: [{
       Effect: 'Allow',
@@ -64,6 +66,10 @@ const serverlessConfiguration: AWS = {
       Effect: 'Allow',
       Action: ['dynamodb:Query'],
       Resource: 'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}/index/${self:provider.environment.IMAGE_ID_INDEX}'
+    }, {
+      Effect: 'Allow',
+      Action: ['s3:PutObject', 's3:GetObject'],
+      Resource: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*'
     }],
     lambdaHashingVersion: '20201221',
   },
@@ -73,7 +79,8 @@ const serverlessConfiguration: AWS = {
     createGroup,
     getImages,
     getImage,
-    createImage
+    createImage,
+    sendNotification
   },
   resources: {
     Resources: {
@@ -130,6 +137,12 @@ const serverlessConfiguration: AWS = {
         Type: 'AWS::S3::Bucket',
         Properties: {
           BucketName: '${self:provider.environment.IMAGES_S3_BUCKET}',
+          NotificationConfiguration: {
+            LambdaConfigurations: [{
+              Event: 's3:ObjectCreated:*',
+              Function: {"Fn::GetAtt": ["SendNotificationLambdaFunction", "Arn"] } // { GetAtt: 'SendNotificationLambdaFunction.Arn' }
+            }]
+          },
           CorsConfiguration: {
             CorsRules: [{
               AllowedOrigins: ['*'],
@@ -155,6 +168,16 @@ const serverlessConfiguration: AWS = {
             }]
           },
           Bucket: { Ref: 'AttachmentsBucket' }
+        }
+      },
+      SendUploadNotitificationsPermission: {
+        Type: 'AWS::Lambda::Permission',
+        Properties: {
+          FunctionName: { Ref: 'SendNotificationLambdaFunction' },
+          Principal: 's3.amazonaws.com',
+          Action: 'lambda:InvokeFunction',
+          SourceAccount: { Ref: 'AWS::AccountId' },
+          SourceArn: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}'
         }
       }
     }

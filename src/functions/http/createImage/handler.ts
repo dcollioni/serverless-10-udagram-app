@@ -3,9 +3,15 @@ import * as AWS  from 'aws-sdk'
 import * as uuid from 'uuid'
 import schema from './schema';
 
-const docClient = new AWS.DynamoDB.DocumentClient()
 const groupsTable = process.env.GROUPS_TABLE
 const imagesTable = process.env.IMAGES_TABLE
+const bucketName = process.env.IMAGES_S3_BUCKET
+const urlExpiration = parseInt(process.env.SIGNED_URL_EXPIRATION)
+
+const docClient = new AWS.DynamoDB.DocumentClient()
+const s3 = new AWS.S3({
+  signatureVersion: 'v4'
+})
 
 import type { ValidatedEventAPIGatewayProxyEvent } from '@libs/apiGateway';
 import { middyfy } from '@libs/lambda';
@@ -20,12 +26,13 @@ const createImage: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (ev
     return formatJSONResponse({ error: 'Group does not exist' }, 404)
   }
 
-  const itemId = uuid.v4()
+  const imageId = uuid.v4()
 
   const newItem = {
-      imageId: itemId,
+      imageId: imageId,
       groupId: groupId,
       timestamp: new Date().toISOString(),
+      imageUrl: `https://${bucketName}.s3.amazonaws.com/${imageId}`,
       ...event.body
   }
 
@@ -34,7 +41,12 @@ const createImage: ValidatedEventAPIGatewayProxyEvent<typeof schema> = async (ev
       Item: newItem
   }).promise()
 
-  return formatJSONResponse({ newItem }, 201)
+  const url = getUploadUrl(imageId)
+
+  return formatJSONResponse({
+    newItem,
+    uploadUrl: url
+  }, 201)
 }
 
 async function groupExists(groupId: string) {
@@ -50,5 +62,14 @@ async function groupExists(groupId: string) {
   console.log('Get group: ', result)
   return !!result.Item
 }
+
+function getUploadUrl(imageId: string) {
+  return s3.getSignedUrl('putObject', {
+    Bucket: bucketName,
+    Key: imageId,
+    Expires: urlExpiration
+  })
+}
+
 
 export const main = middyfy(createImage);
