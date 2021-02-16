@@ -7,7 +7,9 @@ import {
   getImages,
   getImage,
   createImage,
-  sendNotification } from './src/functions';
+  sendNotification,
+  connect,
+  disconnect } from './src/functions';
 
 const serverlessConfiguration: AWS = {
   service: 'service-10-udagram-app',
@@ -50,6 +52,7 @@ const serverlessConfiguration: AWS = {
       AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1',
       GROUPS_TABLE: 'Groups-${self:provider.stage}',
       IMAGES_TABLE: 'Images-${self:provider.stage}',
+      CONNECTIONS_TABLE: 'Connections-${self:provider.stage}',
       IMAGE_ID_INDEX: 'ImageIdIndex',
       IMAGES_S3_BUCKET: 'dcollioni-serverless-udagram-images-${self:provider.stage}',
       SIGNED_URL_EXPIRATION: '300'
@@ -70,6 +73,10 @@ const serverlessConfiguration: AWS = {
       Effect: 'Allow',
       Action: ['s3:PutObject', 's3:GetObject'],
       Resource: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*'
+    }, {
+      Effect: 'Allow',
+      Action: ['dynamodb:Scan', 'dynamodb:PutItem', 'dynamodb:DeleteItem'],
+      Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}'
     }],
     lambdaHashingVersion: '20201221',
   },
@@ -80,7 +87,9 @@ const serverlessConfiguration: AWS = {
     getImages,
     getImage,
     createImage,
-    sendNotification
+    sendNotification,
+    connect,
+    disconnect
   },
   resources: {
     Resources: {
@@ -131,6 +140,21 @@ const serverlessConfiguration: AWS = {
               ProjectionType: 'ALL'
             }
           }]
+        }
+      },
+      WebSocketConnectionsDynamoDBTable: {
+        Type: 'AWS::DynamoDB::Table',
+        Properties: {
+          AttributeDefinitions: [{
+            AttributeName: 'id',
+            AttributeType: 'S'
+          }],
+          KeySchema: [{
+            AttributeName: 'id',
+            KeyType: 'HASH'
+          }],
+          BillingMode: 'PAY_PER_REQUEST',
+          TableName: '${self:provider.environment.CONNECTIONS_TABLE}'
         }
       },
       AttachmentsBucket: {
