@@ -9,7 +9,8 @@ import {
   createImage,
   sendNotification,
   connect,
-  disconnect } from './src/functions';
+  disconnect,
+  elasticsearchSync } from './src/functions';
 
 const serverlessConfiguration: AWS = {
   service: 'service-10-udagram-app',
@@ -89,7 +90,8 @@ const serverlessConfiguration: AWS = {
     createImage,
     sendNotification,
     connect,
-    disconnect
+    disconnect,
+    elasticsearchSync
   },
   resources: {
     Resources: {
@@ -129,6 +131,9 @@ const serverlessConfiguration: AWS = {
             KeyType: 'RANGE'
           }],
           BillingMode: 'PAY_PER_REQUEST',
+          StreamSpecification: {
+            StreamViewType: 'NEW_IMAGE'
+          },
           TableName: '${self:provider.environment.IMAGES_TABLE}',
           GlobalSecondaryIndexes: [{
             IndexName: '${self:provider.environment.IMAGE_ID_INDEX}',
@@ -202,6 +207,36 @@ const serverlessConfiguration: AWS = {
           Action: 'lambda:InvokeFunction',
           SourceAccount: { Ref: 'AWS::AccountId' },
           SourceArn: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}'
+        }
+      },
+      ImagesSearch: {
+        Type: 'AWS::Elasticsearch::Domain',
+        Properties: {
+          ElasticsearchVersion: '6.3',
+          DomainName: 'images-search-${self:provider.stage}',
+          ElasticsearchClusterConfig: {
+            DedicatedMasterEnabled: false,
+            InstanceCount: '1',
+            ZoneAwarenessEnabled: false,
+            InstanceType: 't2.small.elasticsearch'
+          },
+          EBSOptions: {
+            EBSEnabled: true,
+            Iops: 0,
+            VolumeSize: 10,
+            VolumeType: 'gp2'
+          },
+          AccessPolicies: {
+            Version: '2012-10-17',
+            Statement: [{
+              Effect: 'Allow',
+              Principal: {
+                AWS: '*'
+              },
+              Action: 'es:*',
+              Resource: '*'
+            }]  
+          }
         }
       }
     }
