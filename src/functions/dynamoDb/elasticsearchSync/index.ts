@@ -7,6 +7,9 @@ export default {
           arn: {"Fn::GetAtt": ["ImagesDynamoDBTable", "StreamArn"] }
         }
       }
-    ]
+    ],
+    environment: {
+        ES_ENDPOINT: { "Fn::GetAtt": ["ImagesSearch", "DomainEndpoint"] }
+    }
   }
   

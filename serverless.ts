@@ -233,8 +233,8 @@ const serverlessConfiguration: AWS = {
               Principal: {
                 AWS: '*'
               },
-              Action: 'es:*',
-              Resource: '*'
+              Resource: "arn:aws:es:${self:provider.region}:911876997465:domain/images-search-${self:provider.stage}/*",
+              Action: 'es:*'
             }]  
           }
         }
