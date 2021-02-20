@@ -20,6 +20,7 @@ const serverlessConfiguration: AWS = {
       webpackConfig: './webpack.config.js',
       includeModules: true
     },
+    topicName: 'imagesTopic-${self:provider.stage}',
     documentation: {
       api: {
         info: {
@@ -167,9 +168,9 @@ const serverlessConfiguration: AWS = {
         Properties: {
           BucketName: '${self:provider.environment.IMAGES_S3_BUCKET}',
           NotificationConfiguration: {
-            LambdaConfigurations: [{
-              Event: 's3:ObjectCreated:*',
-              Function: {"Fn::GetAtt": ["SendNotificationLambdaFunction", "Arn"] } // { GetAtt: 'SendNotificationLambdaFunction.Arn' }
+            TopicConfigurations: [{
+              Event: 's3:ObjectCreated:Put',
+              Topic: { Ref: 'ImagesTopic' }
             }]
           },
           CorsConfiguration: {
@@ -237,6 +238,39 @@ const serverlessConfiguration: AWS = {
               Action: 'es:*'
             }]  
           }
+        }
+      },
+      SNSTopicPolicy: {
+        Type: 'AWS::SNS::TopicPolicy',
+        Properties: {
+          PolicyDocument: {
+            Version: "2012-10-17",
+            Statement: [{
+              Effect: 'Allow',
+              Principal: {
+                AWS: "*"
+              },
+              Action: 'sns:Publish',
+              Resource: {
+                Ref: 'ImagesTopic'
+              },
+              Condition: {
+                ArnLike: {
+                  'AWS:SourceArn': 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}'
+                }
+              }
+            }]
+          },
+          Topics: [{
+            Ref: 'ImagesTopic'
+          }]
+        }
+      },
+      ImagesTopic: {
+        Type: 'AWS::SNS::Topic',
+        Properties: {
+          DisplayName: 'Image bucket topic',
+          TopicName: '${self:custom.topicName}'
         }
       }
     }
