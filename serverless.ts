@@ -10,7 +10,8 @@ import {
   sendNotification,
   connect,
   disconnect,
-  elasticsearchSync } from './src/functions';
+  // elasticsearchSync,
+  resizeImage } from './src/functions';
 
 const serverlessConfiguration: AWS = {
   service: 'service-10-udagram-app',
@@ -57,7 +58,8 @@ const serverlessConfiguration: AWS = {
       CONNECTIONS_TABLE: 'Connections-${self:provider.stage}',
       IMAGE_ID_INDEX: 'ImageIdIndex',
       IMAGES_S3_BUCKET: 'dcollioni-serverless-udagram-images-${self:provider.stage}',
-      SIGNED_URL_EXPIRATION: '300'
+      SIGNED_URL_EXPIRATION: '300',
+      THUMBNAILS_S3_BUCKET: 'dcollioni-serverless-udagram-thumbnail-${self:provider.stage}'
     },
     iamRoleStatements: [{
       Effect: 'Allow',
@@ -77,6 +79,10 @@ const serverlessConfiguration: AWS = {
       Resource: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*'
     }, {
       Effect: 'Allow',
+      Action: ['s3:PutObject'],
+      Resource: 'arn:aws:s3:::${self:provider.environment.THUMBNAILS_S3_BUCKET}/*'
+    }, {
+      Effect: 'Allow',
       Action: ['dynamodb:Scan', 'dynamodb:PutItem', 'dynamodb:DeleteItem'],
       Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}'
     }],
@@ -92,7 +98,8 @@ const serverlessConfiguration: AWS = {
     sendNotification,
     connect,
     disconnect,
-    elasticsearchSync
+    // elasticsearchSync,
+    resizeImage
   },
   resources: {
     Resources: {
@@ -210,36 +217,36 @@ const serverlessConfiguration: AWS = {
           SourceArn: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}'
         }
       },
-      ImagesSearch: {
-        Type: 'AWS::Elasticsearch::Domain',
-        Properties: {
-          ElasticsearchVersion: '6.3',
-          DomainName: 'images-search-${self:provider.stage}',
-          ElasticsearchClusterConfig: {
-            DedicatedMasterEnabled: false,
-            InstanceCount: '1',
-            ZoneAwarenessEnabled: false,
-            InstanceType: 't2.small.elasticsearch'
-          },
-          EBSOptions: {
-            EBSEnabled: true,
-            Iops: 0,
-            VolumeSize: 10,
-            VolumeType: 'gp2'
-          },
-          AccessPolicies: {
-            Version: '2012-10-17',
-            Statement: [{
-              Effect: 'Allow',
-              Principal: {
-                AWS: '*'
-              },
-              Resource: "arn:aws:es:${self:provider.region}:911876997465:domain/images-search-${self:provider.stage}/*",
-              Action: 'es:*'
-            }]  
-          }
-        }
-      },
+      // ImagesSearch: {
+      //   Type: 'AWS::Elasticsearch::Domain',
+      //   Properties: {
+      //     ElasticsearchVersion: '6.3',
+      //     DomainName: 'images-search-${self:provider.stage}',
+      //     ElasticsearchClusterConfig: {
+      //       DedicatedMasterEnabled: false,
+      //       InstanceCount: '1',
+      //       ZoneAwarenessEnabled: false,
+      //       InstanceType: 't2.small.elasticsearch'
+      //     },
+      //     EBSOptions: {
+      //       EBSEnabled: true,
+      //       Iops: 0,
+      //       VolumeSize: 10,
+      //       VolumeType: 'gp2'
+      //     },
+      //     AccessPolicies: {
+      //       Version: '2012-10-17',
+      //       Statement: [{
+      //         Effect: 'Allow',
+      //         Principal: {
+      //           AWS: '*'
+      //         },
+      //         Resource: "arn:aws:es:${self:provider.region}:911876997465:domain/images-search-${self:provider.stage}/*",
+      //         Action: 'es:*'
+      //       }]  
+      //     }
+      //   }
+      // },
       SNSTopicPolicy: {
         Type: 'AWS::SNS::TopicPolicy',
         Properties: {
@@ -271,6 +278,12 @@ const serverlessConfiguration: AWS = {
         Properties: {
           DisplayName: 'Image bucket topic',
           TopicName: '${self:custom.topicName}'
+        }
+      },
+      ThumbnailsBucket: {
+        Type: 'AWS::S3::Bucket',
+        Properties: {
+          BucketName: '${self:provider.environment.THUMBNAILS_S3_BUCKET}'
         }
       }
     }
