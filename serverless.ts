@@ -12,7 +12,8 @@ import {
   disconnect,
   // elasticsearchSync,
   resizeImage,
-  auth0Authorizer } from './src/functions';
+  auth0Authorizer,
+  rs256Auth0Authorizer } from './src/functions';
 
 const serverlessConfiguration: AWS = {
   service: 'service-10-udagram-app',
@@ -111,7 +112,8 @@ const serverlessConfiguration: AWS = {
     disconnect,
     // elasticsearchSync,
     resizeImage,
-    auth0Authorizer
+    auth0Authorizer,
+    rs256Auth0Authorizer
   },
   resources: {
     Resources: {

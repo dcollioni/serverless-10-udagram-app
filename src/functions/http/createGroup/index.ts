@@ -8,7 +8,7 @@ export default {
           method: 'post',
           path: 'groups',
           cors: true,
-          authorizer: 'auth0Authorizer',
+          authorizer: 'rs256Auth0Authorizer',
           request: {
             schema: {
               'application/json': schema
