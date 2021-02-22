@@ -8,6 +8,7 @@ export default {
           method: 'post',
           path: 'groups/{groupId}/images',
           cors: true,
+          authorizer: 'auth0Authorizer',
           request: {
             schema: {
               'application/json': schema

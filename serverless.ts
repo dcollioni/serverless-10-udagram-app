@@ -11,7 +11,8 @@ import {
   connect,
   disconnect,
   // elasticsearchSync,
-  resizeImage } from './src/functions';
+  resizeImage,
+  auth0Authorizer } from './src/functions';
 
 const serverlessConfiguration: AWS = {
   service: 'service-10-udagram-app',
@@ -59,7 +60,9 @@ const serverlessConfiguration: AWS = {
       IMAGE_ID_INDEX: 'ImageIdIndex',
       IMAGES_S3_BUCKET: 'dcollioni-serverless-udagram-images-${self:provider.stage}',
       SIGNED_URL_EXPIRATION: '300',
-      THUMBNAILS_S3_BUCKET: 'dcollioni-serverless-udagram-thumbnail-${self:provider.stage}'
+      THUMBNAILS_S3_BUCKET: 'dcollioni-serverless-udagram-thumbnail-${self:provider.stage}',
+      AUTH_0_SECRET_ID: 'Auth0Secret-${self:provider.stage}',
+      AUTH_0_SECRET_FIELD: 'auth0Secret'
     },
     iamRoleStatements: [{
       Effect: 'Allow',
@@ -85,6 +88,14 @@ const serverlessConfiguration: AWS = {
       Effect: 'Allow',
       Action: ['dynamodb:Scan', 'dynamodb:PutItem', 'dynamodb:DeleteItem'],
       Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CONNECTIONS_TABLE}'
+    }, {
+      Effect: 'Allow',
+      Action: ['secretsmanager:GetSecretValue'],
+      Resource: { Ref: 'Auth0Secret' }
+    }, {
+      Effect: 'Allow',
+      Action: ['kms:Decrypt'],
+      Resource: {"Fn::GetAtt": ["KMSKey", "Arn"] }
     }],
     lambdaHashingVersion: '20201221',
   },
@@ -99,10 +110,25 @@ const serverlessConfiguration: AWS = {
     connect,
     disconnect,
     // elasticsearchSync,
-    resizeImage
+    resizeImage,
+    auth0Authorizer
   },
   resources: {
     Resources: {
+      GatewayResponseDefault4XX: {
+        Type: 'AWS::ApiGateway::GatewayResponse',
+        Properties: {
+          ResponseParameters: {
+            'gatewayresponse.header.Access-Control-Allow-Origin': "'*'",
+            'gatewayresponse.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+            'gatewayresponse.header.Access-Control-Allow-Methods': "'GET,OPTIONS,POST'"
+          },
+          ResponseType: 'DEFAULT_4XX',
+          RestApiId: {
+            Ref: 'ApiGatewayRestApi'
+          }
+        }
+      },
       GroupsDynamoDBTable: {
         Type: 'AWS::DynamoDB::Table',
         Properties: {
@@ -284,6 +310,51 @@ const serverlessConfiguration: AWS = {
         Type: 'AWS::S3::Bucket',
         Properties: {
           BucketName: '${self:provider.environment.THUMBNAILS_S3_BUCKET}'
+        }
+      },
+      KMSKey: {
+        Type: "AWS::KMS::Key",
+        Properties: {
+          Description: "KMS key to encrypt Auth0 secret",
+          KeyPolicy: {
+            Version: "2012-10-17",
+            Id: "key-default-1",
+            Statement: [{
+              Sid: "Allow administration of the key",
+              Effect: "Allow",
+              Principal: {
+                AWS: {
+                  "Fn::Join": [
+                    ":",
+                    [
+                      'arn:aws:iam:',
+                      { Ref: 'AWS::AccountId' },
+                      'root'
+                    ]
+                  ]
+                }
+              },
+              Action: [
+                "kms:*"
+              ],
+              Resource: "*"
+            }]
+            }
+          }
+      },
+      KMSKeyAlias: {
+        Type: 'AWS::KMS::Alias',
+        Properties: {
+          AliasName: 'alias/auth0Key-${self:provider.stage}',
+          TargetKeyId: { Ref: 'KMSKey' }
+        }
+      },
+      Auth0Secret: {
+        Type: 'AWS::SecretsManager::Secret',
+        Properties: {
+          Name: '${self:provider.environment.AUTH_0_SECRET_ID}',
+          Description: 'Auth0 secret',
+          KmsKeyId: { Ref: 'KMSKey' }
         }
       }
     }
