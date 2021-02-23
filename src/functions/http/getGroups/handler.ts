@@ -1,9 +1,6 @@
 import 'source-map-support/register';
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import * as AWS  from 'aws-sdk'
-
-const docClient = new AWS.DynamoDB.DocumentClient()
-const groupsTable = process.env.GROUPS_TABLE
+import { getAllGroups } from './../../../services/groupService'
 
 import { formatJSONResponse } from '@libs/apiGateway';
 import { middyfy } from '@libs/lambda';
@@ -11,12 +8,7 @@ import { middyfy } from '@libs/lambda';
 const getGroups: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     console.log('Processing event: ', event)
 
-    const result = await docClient.scan({
-        TableName: groupsTable
-    }).promise()
-
-    const items = result.Items
-
+    const items = await getAllGroups()
     return formatJSONResponse({ items })
 }
 

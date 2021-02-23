@@ -9,6 +9,7 @@
   "dependencies": {
     "@middy/core": "^1.5.0",
     "@middy/http-json-body-parser": "^1.5.0",
+    "aws-xray-sdk": "^3.2.0",
     "elasticsearch": "^16.7.2",
     "http-aws-es": "^6.0.0",
     "jimp": "^0.16.1",
