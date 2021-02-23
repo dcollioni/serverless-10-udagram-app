@@ -2,9 +2,11 @@ import * as AWS  from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 import { DocumentClient } from 'aws-sdk/clients/dynamodb'
 
+process.env._X_AMZN_TRACE_ID = '0'
+
 const XAWS = AWSXRay.captureAWS(AWS)
 
-import { Group } from '../models/Group'
+import Group from '../models/Group'
 
 export default class GroupRepo {
 

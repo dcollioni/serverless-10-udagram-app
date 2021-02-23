@@ -41,9 +41,26 @@ const serverlessConfiguration: AWS = {
         contentType: 'application/json',
         schema: '${file(src/functions/http/createImage/schema.ts)}'
       }]
+    },
+    'serverless-offline': {
+      port: 3003
+    },
+    dynamodb: {
+      start: {
+        port: 8000,
+        inMemory: true,
+        migrate: true
+      },
+      stages: [
+        'dev'
+      ]
     }
   },
-  plugins: ['serverless-webpack'],
+  plugins: [
+    'serverless-webpack',
+    'serverless-dynamodb-local',
+    'serverless-offline'
+  ],
   provider: {
     name: 'aws',
     runtime: 'nodejs12.x',

@@ -1,10 +1,5 @@
 import 'source-map-support/register';
-import * as uuid from 'uuid'
 import schema from './schema';
-
-// const docClient = new AWS.DynamoDB.DocumentClient()
-// const groupsTable = process.env.GROUPS_TABLE
-
 import type { ValidatedEventAPIGatewayProxyEvent } from '@libs/apiGateway';
 import { middyfy } from '@libs/lambda';
 import { formatJSONResponse } from '@libs/apiGateway';
