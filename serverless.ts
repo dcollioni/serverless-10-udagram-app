@@ -59,7 +59,8 @@ const serverlessConfiguration: AWS = {
   plugins: [
     'serverless-webpack',
     'serverless-dynamodb-local',
-    'serverless-offline'
+    'serverless-offline',
+    'serverless-plugin-canary-deployments'
   ],
   provider: {
     name: 'aws',
@@ -114,6 +115,10 @@ const serverlessConfiguration: AWS = {
       Effect: 'Allow',
       Action: ['kms:Decrypt'],
       Resource: {"Fn::GetAtt": ["KMSKey", "Arn"] }
+    }, {
+      Effect: 'Allow',
+      Action: ['codedeploy:*'],
+      Resource: ['*']
     }],
     lambdaHashingVersion: '20201221',
   },

@@ -24,6 +24,7 @@ export async function createGroup(
     userId: userId,
     name: createGroupRequest.name,
     description: createGroupRequest.description,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    version: '3'
   })
 }

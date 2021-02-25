@@ -3,5 +3,6 @@ export default interface Group {
     name: string
     description: string
     userId: string,
-    timestamp: string
+    timestamp: string,
+    version: string
 }
