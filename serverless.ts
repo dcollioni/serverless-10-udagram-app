@@ -67,6 +67,10 @@ const serverlessConfiguration: AWS = {
     runtime: 'nodejs12.x',
     stage: 'dev',
     region: 'eu-west-1',
+    tracing: {
+      lambda: true,
+      apiGateway: true
+    },
     apiGateway: {
       minimumCompressionSize: 1024,
       shouldStartNameWithService: true,
