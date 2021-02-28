@@ -62,6 +62,9 @@ const serverlessConfiguration: AWS = {
     'serverless-offline',
     'serverless-plugin-canary-deployments'
   ],
+  package: {
+    individually: true
+  },
   provider: {
     name: 'aws',
     runtime: 'nodejs12.x',
